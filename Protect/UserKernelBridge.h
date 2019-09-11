@@ -1,0 +1,14 @@
+#pragma once
+
+#define IOCTL_PROTECT           CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_REMOVE_PROTECT    CTL_CODE(FILE_DEVICE_UNKNOWN, 0x802, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+#define DEVICE_NAME				L"\\Device\\Protect"
+#define DOS_DEVICES_NAME		L"\\DosDevices\\Protect"
+#define USER_DEVICE_NAME        L"\\\\.\\Protect"
+
+typedef struct _PROTECT_INPUT
+{
+	ULONG Operation;
+	WCHAR Name[MAX_PATH + 1];
+} PROTECT_INPUT, * PPROTECT_INPUT;
