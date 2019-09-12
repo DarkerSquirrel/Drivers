@@ -1,10 +1,8 @@
-#pragma once
 #include "Protect.h"
 #include "UserKernelBridge.h"
 
 #define PROCESS_CREATE_PROCESS  0x0001
 #define PROCESS_CREATE_THREAD   0x0002
-#define PROCESS_DUP_HANDLE      0x0040
 #define PROCESS_VM_READ         0x0010
 #define PROCESS_VM_WRITE        0x0020
 
@@ -23,7 +21,7 @@ PreOpCallback(
     PermissionsToRemove |= PROCESS_VM_READ;
     PermissionsToRemove |= PROCESS_VM_WRITE;
 
-    PACCESS_MASK ModifiedPermissions;
+    PACCESS_MASK ModifiedPermissions = NULL;
     
     switch (PreOpInfo->Operation)
     {
@@ -54,12 +52,14 @@ PreOpCallback(
     }
     else
     {
-        DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "PreOpCallback: Meme ObjectType provided 0x%x", PreOpInfo->ObjectType);
         goto Exit;
     }
 
+    DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_TRACE_LEVEL, "PreOpCallback: Attempt to access %ls from PID: 0x%p", RegContext->ProtectedName, PsGetCurrentProcessId());
+
     // Actually perform the filtering
-    *ModifiedPermissions &= ~PermissionsToRemove;
+    if (ModifiedPermissions != NULL)
+        *ModifiedPermissions &= ~PermissionsToRemove;
 Exit:
     return OB_PREOP_SUCCESS;
 }
@@ -70,6 +70,8 @@ PostOpCallback(
     _Inout_ POB_POST_OPERATION_INFORMATION PostOpInfo
 )
 {
+    UNREFERENCED_PARAMETER(RegistrationContext);
+    UNREFERENCED_PARAMETER(PostOpInfo);
     // Nothing to do here
-    return;
 }
+

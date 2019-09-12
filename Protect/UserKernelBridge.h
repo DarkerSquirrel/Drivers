@@ -7,8 +7,13 @@
 #define DOS_DEVICES_NAME		L"\\DosDevices\\Protect"
 #define USER_DEVICE_NAME        L"\\\\.\\Protect"
 
+#define DRIVER_NAME             L"Protect"
+#define DRIVER_NAME_AND_EXT     L"Protect.sys"
+
+#define DEFAULT_SYS_LOCATION    L"C:\\Windows\\System32\\Drivers\\"
+#define DEFAULT_INSTALL_PATH    L"C:\\Windows\\System32\\Drivers\\Protect.sys"
+
 typedef struct _PROTECT_INPUT
 {
-	ULONG Operation;
 	WCHAR Name[MAX_PATH + 1];
 } PROTECT_INPUT, * PPROTECT_INPUT;

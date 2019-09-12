@@ -18,6 +18,7 @@ typedef struct _CALLBACK_REGISTRATION
 	PVOID TargetProcess;
 	HANDLE TargetProcessId;
 
+    WCHAR ProtectedName[MAX_PATH + 1];
 	ULONG RegistrationId;
 } CALLBACK_REGISTRATION, * PCALLBACK_REGISTRATION;
 
@@ -30,9 +31,5 @@ typedef struct _CALL_CONTEXT
 	POBJECT_TYPE ObjectType;
 } CALL_CONTEXT, * PCALL_CONTEXT;
 
-NTSTATUS ControlProtect(_In_ PDEVICE_OBJECT DeviceObject, _In_ PIRP pIRP);
-NTSTATUS ControlRemoveProtect(_In_ PDEVICE_OBJECT DeviceObject, _In_ PIRP pIRP);
-
 OB_PREOP_CALLBACK_STATUS PreOpCallback(_In_ PVOID RegistrationContext, _Inout_ POB_PRE_OPERATION_INFORMATION PreOpInfo);
 VOID PostOpCallback(_In_ PVOID RegistrationContext, _Inout_ POB_POST_OPERATION_INFORMATION PostOpInfo);
-NTSTATUS ProtectNameCallback(_In_ PPROTECT_INPUT pProtectName); 

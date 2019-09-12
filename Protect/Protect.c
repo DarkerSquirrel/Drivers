@@ -1,4 +1,3 @@
-#pragma once
 #include "Protect.h"
 #include "UserKernelBridge.h"
 
@@ -19,6 +18,8 @@ DriverEntry(
 {
     NTSTATUS Status;
     
+    UNREFERENCED_PARAMETER(RegistryPath);
+
     UNICODE_STRING DeviceName;
     UNICODE_STRING DosDevicesName;
     RtlInitUnicodeString(&DeviceName, DEVICE_NAME);
@@ -69,11 +70,13 @@ Exit:
 
 NTSTATUS
 DeviceCreate(
-    _In_ DEVICE_OBJECT DeviceObject,
-    _In_ PIRP pIRP
+    IN PDEVICE_OBJECT pDeviceObject,
+    IN PIRP pIRP
 )
 {
     NTSTATUS Status = STATUS_SUCCESS;
+
+    UNREFERENCED_PARAMETER(pDeviceObject);
 
     pIRP->IoStatus.Status = Status;
     pIRP->IoStatus.Information = 0;
@@ -84,11 +87,13 @@ DeviceCreate(
 
 NTSTATUS
 DeviceClose(
-    _In_ DEVICE_OBJECT DeviceObject,
-    _In_ PIRP pIRP
+    IN PDEVICE_OBJECT pDeviceObject,
+    IN PIRP pIRP
 )
 {
     NTSTATUS Status = STATUS_SUCCESS;
+
+    UNREFERENCED_PARAMETER(pDeviceObject);
 
     pIRP->IoStatus.Status = Status;
     pIRP->IoStatus.Information = 0;
@@ -99,11 +104,13 @@ DeviceClose(
 
 NTSTATUS
 DeviceCleanup(
-    _In_ DEVICE_OBJECT DeviceObject,
-    _In_ PIRP pIRP
+    IN PDEVICE_OBJECT pDeviceObject,
+    IN PIRP pIRP
 )
 {
     NTSTATUS Status = STATUS_SUCCESS;
+
+    UNREFERENCED_PARAMETER(pDeviceObject);
 
     pIRP->IoStatus.Status = Status;
     pIRP->IoStatus.Information = 0;
@@ -113,12 +120,37 @@ DeviceCleanup(
 }
 
 NTSTATUS
+ControlProtect(
+    _In_ PDEVICE_OBJECT pDeviceObject,
+    _In_ PPROTECT_INPUT pInput
+)
+{
+    UNREFERENCED_PARAMETER(pDeviceObject);
+    UNREFERENCED_PARAMETER(pInput);
+    return STATUS_SUCCESS;
+}
+
+NTSTATUS
+ControlRemoveProtect(
+    _In_ PDEVICE_OBJECT pDeviceObject,
+    _In_ PPROTECT_INPUT pIRP
+)
+{
+    UNREFERENCED_PARAMETER(pDeviceObject);
+    UNREFERENCED_PARAMETER(pIRP);
+    return STATUS_SUCCESS;
+}
+
+NTSTATUS
 DeviceControl(
-    _In_ DEVICE_OBJECT DeviceObject,
-    _In_ PIRP pIRP
+    IN PDEVICE_OBJECT pDeviceObject,
+    IN PIRP pIRP
 )
 {
     NTSTATUS Status = STATUS_SUCCESS;
+
+    UNREFERENCED_PARAMETER(pDeviceObject);
+
     PIO_STACK_LOCATION pIRPStack;
     pIRPStack = IoGetCurrentIrpStackLocation(pIRP);
    
@@ -138,13 +170,13 @@ DeviceControl(
 
     PPROTECT_INPUT pInput = (PPROTECT_INPUT)pIRP->AssociatedIrp.SystemBuffer;
 
-    switch (pInput->Operation)
+    switch (pIRPStack->Parameters.DeviceIoControl.IoControlCode)
     {
     case IOCTL_PROTECT:
-        // Status = ProtectFunc
+        Status = ControlProtect(pDeviceObject, pInput);
         break;
     case IOCTL_REMOVE_PROTECT:
-        // Status = RemoveProtectFunc
+        Status = ControlRemoveProtect(pDeviceObject, pInput);
         break;
     }
 
@@ -153,7 +185,7 @@ DeviceControl(
 
 VOID
 DriverUnload(
-    _In_ PDRIVER_OBJECT pDriverObject
+    IN PDRIVER_OBJECT pDriverObject
 )
 {
     NTSTATUS Status = STATUS_SUCCESS;
@@ -166,6 +198,4 @@ DriverUnload(
         DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "DriverUnload: IoDeleteSymbolicLink failed with 0x%x", Status);
     
     IoDeleteDevice(pDriverObject->DeviceObject);
-
-    return Status;
 }
