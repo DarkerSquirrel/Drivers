@@ -48,13 +48,60 @@ Exit:
 }
 
 NTSTATUS
-IOCTLEnumerateProtectedProcesses(
+IOCTLEnumerateWatchList(
     _In_ UINT64 OutputLen,
     _Out_ PENUMERATE_PROCESS_INFO OutputBuffer
 )
 {
     NTSTATUS Status = STATUS_SUCCESS;
 
-    if (OutputLen < sizeof(PENUMERATE_PROCESS_INFO))
+    if (OutputLen < sizeof(OutputBuffer))
+    {
+        Status = STATUS_BUFFER_OVERFLOW;
+        goto Exit;
+    }
+
+    memset(OutputBuffer, 0, sizeof(ENUMERATE_PROCESS_INFO));
+
+    KeAcquireGuardedMutex(&ProcessWatchListMutex);
+
+    OutputBuffer->WatchCount = CurrentWatchCount;
+    PLIST_ENTRY CurrEntry = ProcessWatchList.Flink;
+    int CurrCount = 0;
+
+    while (CurrEntry != NULL)
+    {
+        memcpy(OutputBuffer->Names[CurrCount],
+            CONTAINING_RECORD(CurrEntry, WATCH_PROCESS_ENTRY, List)->Name,
+            MAX_PATH + 1);
+        CurrEntry = CurrEntry->Flink;
+    }
+
+    KeReleaseGuardedMutex(&ProcessWatchListMutex);
+
+Exit:
+    return Status;
+}
+
+NTSTATUS
+IOCTLClearWatchList(
+)
+{
+    NTSTATUS Status = STATUS_SUCCESS;
+
+    KeAcquireGuardedMutex(&ProcessWatchListMutex);
+    
+    CurrentWatchCount = 0;
+    
+    if (!IsListEmpty(&ProcessWatchList))
+    {
+        PLIST_ENTRY Removed = RemoveHeadList(&ProcessWatchList);
+        PWATCH_PROCESS_ENTRY WatchProcess = CONTAINING_RECORD(Removed, WATCH_PROCESS_ENTRY, List);
+        ExFreePoolWithTag(WatchProcess, LIST_POOL_TAG);
+    }
+
+    KeReleaseGuardedMutex(&ProcessWatchListMutex);
+
+Exit:
     return Status;
 }

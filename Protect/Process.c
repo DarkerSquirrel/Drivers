@@ -7,6 +7,5 @@ CreateProcessNotifyRoutine(
     _In_opt_ PPS_CREATE_NOTIFY_INFO CreateInfo
 )
 {
-    
-    DbgPrintEx("")
+
 }

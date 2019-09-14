@@ -8,6 +8,7 @@
 extern KGUARDED_MUTEX CallbackMutex;
 extern KGUARDED_MUTEX ProcessWatchListMutex;
 extern LIST_ENTRY ProcessWatchList;
+extern UINT32 CurrentWatchCount;
 
 typedef struct _CALLBACK_PARAMS
 {

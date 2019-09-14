@@ -10,6 +10,7 @@ KGUARDED_MUTEX CallbackMutex;
 
 KGUARDED_MUTEX ProcessWatchListMutex;
 LIST_ENTRY ProcessWatchList;
+UINT32 CurrentWatchCount = 0;
 
 OB_PREOP_CALLBACK_STATUS
 PreOpCallback(
