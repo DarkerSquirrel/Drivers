@@ -8,13 +8,16 @@
 
 KGUARDED_MUTEX CallbackMutex;
 
+KGUARDED_MUTEX ProcessWatchListMutex;
+LIST_ENTRY ProcessWatchList;
+
 OB_PREOP_CALLBACK_STATUS
 PreOpCallback(
     _In_ PVOID RegistrationContext,
     _Inout_ POB_PRE_OPERATION_INFORMATION PreOpInfo
 )
 {
-    PCALLBACK_REGISTRATION RegContext = (PCALLBACK_REGISTRATION)RegistrationContext;
+    PREGISTRATION_INFO RegContext = (PREGISTRATION_INFO)RegistrationContext;
     
     ACCESS_MASK PermissionsToRemove = 0;
     PermissionsToRemove |= PROCESS_DUP_HANDLE;

@@ -42,6 +42,7 @@ DriverEntry(
         goto Exit;
 
     KeInitializeGuardedMutex(&CallbackMutex);
+    InitializeListHead(&ProcessWatchList);
 
     DriverObject->MajorFunction[IRP_MJ_CREATE]         = DeviceCreate;
     DriverObject->MajorFunction[IRP_MJ_CLOSE]          = DeviceClose;
@@ -55,6 +56,8 @@ DriverEntry(
         goto Exit;
     
     SymLinkCreated = TRUE;
+
+    PsSetCreateProcessNotifyRoutineEx(CreateProcessNotifyRoutine,FALSE);
 
 Exit:
     if (!NT_SUCCESS(Status))
@@ -199,3 +202,4 @@ DriverUnload(
     
     IoDeleteDevice(pDriverObject->DeviceObject);
 }
+

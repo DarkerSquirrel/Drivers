@@ -2,16 +2,20 @@
 #include <ntddk.h>
 
 #define MAX_PATH 256
+#define LIST_POOL_TAG 'torP'
+#define MAX_WATCH_COUNT 10
 
 extern KGUARDED_MUTEX CallbackMutex;
+extern KGUARDED_MUTEX ProcessWatchListMutex;
+extern LIST_ENTRY ProcessWatchList;
 
 typedef struct _CALLBACK_PARAMS
 {
 	ACCESS_MASK AccessClear;
 	ACCESS_MASK AccessSet;
-} CALLBACK_PARAMS, * PCALLBACK_PARAMS;
+} CALLBACK_PARAMS, *PCALLBACK_PARAMS;
 
-typedef struct _CALLBACK_REGISTRATION
+typedef struct _REGISTRATION_INFO
 {
 	PVOID RegistrationHandle;
 
@@ -19,17 +23,38 @@ typedef struct _CALLBACK_REGISTRATION
 	HANDLE TargetProcessId;
 
     WCHAR ProtectedName[MAX_PATH + 1];
-	ULONG RegistrationId;
-} CALLBACK_REGISTRATION, * PCALLBACK_REGISTRATION;
+} REGISTRATION_INFO, *PREGISTRATION_INFO;
 
 typedef struct _CALL_CONTEXT
 {
-	PCALLBACK_REGISTRATION CallbackRegistration;
+	PREGISTRATION_INFO CallbackRegistration;
 
 	OB_OPERATION Operation;
 	PVOID Object;
 	POBJECT_TYPE ObjectType;
-} CALL_CONTEXT, * PCALL_CONTEXT;
+} CALL_CONTEXT, *PCALL_CONTEXT;
 
-OB_PREOP_CALLBACK_STATUS PreOpCallback(_In_ PVOID RegistrationContext, _Inout_ POB_PRE_OPERATION_INFORMATION PreOpInfo);
-VOID PostOpCallback(_In_ PVOID RegistrationContext, _Inout_ POB_POST_OPERATION_INFORMATION PostOpInfo);
+typedef struct _WATCH_PROCESS_ENTRY
+{
+    LIST_ENTRY List;
+    WCHAR Name[MAX_PATH + 1];
+} WATCH_PROCESS_ENTRY, *PWATCH_PROCESS_ENTRY;
+
+OB_PREOP_CALLBACK_STATUS
+PreOpCallback(
+    _In_ PVOID RegistrationContext,
+    _Inout_ POB_PRE_OPERATION_INFORMATION PreOpInfo
+);
+
+VOID
+PostOpCallback(
+    _In_ PVOID RegistrationContext,
+    _Inout_ POB_POST_OPERATION_INFORMATION PostOpInfo
+);
+
+VOID
+CreateProcessNotifyRoutine(
+    _Inout_ PEPROCESS Process,
+    _In_ HANDLE ProcessId,
+    _In_opt_ PPS_CREATE_NOTIFY_INFO CreateInfo
+);

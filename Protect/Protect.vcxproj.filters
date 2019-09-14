@@ -30,12 +30,21 @@
     <ClInclude Include="UserKernelBridge.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="IOCTL.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Protect.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Callbacks.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Process.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IOCTL.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

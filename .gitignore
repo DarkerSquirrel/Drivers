@@ -2,6 +2,7 @@
 x64/*
 x86/*
 Protect/x64*
+Protect/ARM*
 Protect/x86*
 ProtectInterface/x64*
 ProtectInterface/x86*

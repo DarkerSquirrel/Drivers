@@ -3,14 +3,18 @@
 using namespace std;
 
 BOOL InstallDriver(
-    _In_ LPCWSTR DriverInstallDirectory
+    _In_ LPCWSTR DriverInstallPath
 )
 {
+    // Ensure driver is uninstalled
+    if (!UninstallDriver())
+        return FALSE;
+
     // Driver is assumed to be in the same directory
     // Copy the driver into the system driver directory
     auto Status = CopyFileW(
-        DRIVER_NAME, 
-        DriverInstallDirectory, 
+        DRIVER_NAME_AND_EXT, 
+        DriverInstallPath, 
         TRUE
     );
 
@@ -45,7 +49,7 @@ BOOL InstallDriver(
         SERVICE_KERNEL_DRIVER,
         SERVICE_DEMAND_START,
         SERVICE_ERROR_NORMAL,
-        DriverInstallDirectory,
+        DriverInstallPath,
         NULL,
         NULL,
         NULL,

@@ -139,11 +139,14 @@
     <FilesToPackage Include="$(TargetPath)" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="IOCTL.h" />
     <ClInclude Include="Protect.h" />
     <ClInclude Include="UserKernelBridge.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Callbacks.c" />
+    <ClCompile Include="IOCTL.c" />
+    <ClCompile Include="Process.c" />
     <ClCompile Include="Protect.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
