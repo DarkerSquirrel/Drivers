@@ -27,6 +27,7 @@ DriverEntry(
     
     PDEVICE_OBJECT pDeviceObject;
     BOOLEAN SymLinkCreated = FALSE;
+    BOOLEAN NotifyRoutineSet = FALSE;
 
     Status = IoCreateDevice(
         DriverObject,
@@ -43,6 +44,7 @@ DriverEntry(
 
     KeInitializeGuardedMutex(&CallbackMutex);
     InitializeListHead(&ProcessWatchList);
+    InitializeListHead(&PidWatchList);
 
     DriverObject->MajorFunction[IRP_MJ_CREATE]         = DeviceCreate;
     DriverObject->MajorFunction[IRP_MJ_CLOSE]          = DeviceClose;
@@ -178,9 +180,11 @@ DeviceControl(
     case IOCTL_PROTECT:
         Status = ControlProtect(pDeviceObject, pInput);
         break;
-    case IOCTL_REMOVE_PROTECT:
+    case IOCTL_PROTECT_REMOVE:
         Status = ControlRemoveProtect(pDeviceObject, pInput);
         break;
+    case IOCTL_PROTECT_ENUM:
+        Status = 1;
     }
 
     return Status;

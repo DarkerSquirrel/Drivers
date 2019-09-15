@@ -8,6 +8,7 @@
 extern KGUARDED_MUTEX CallbackMutex;
 extern KGUARDED_MUTEX ProcessWatchListMutex;
 extern LIST_ENTRY ProcessWatchList;
+extern LIST_ENTRY PidWatchList;
 extern UINT32 CurrentWatchCount;
 
 typedef struct _CALLBACK_PARAMS
@@ -40,6 +41,12 @@ typedef struct _WATCH_PROCESS_ENTRY
     LIST_ENTRY List;
     WCHAR Name[MAX_PATH + 1];
 } WATCH_PROCESS_ENTRY, *PWATCH_PROCESS_ENTRY;
+
+typedef struct _WATCH_PID_ENTRY
+{
+    LIST_ENTRY List;
+    HANDLE ProcessId;
+} WATCH_PID_ENTRY, *PWATCH_PID_ENTRY;
 
 OB_PREOP_CALLBACK_STATUS
 PreOpCallback(
