@@ -24,12 +24,52 @@ GetDeviceHandle(
 
 VOID
 SendIOCTL(
-    _In_ ULONG Ioctl,
-    _In_ PVOID pInputBuffer,
-    _In_ ULONG InputLength,
-    _In_ PVOID pOutputBuffer,
-    _In_ ULONG OutputLength
-) noexcept
+    ULONG Ioctl,
+    PVOID IoctlInfo
+)
+noexcept
 {
+    try 
+    {
+        auto Handle = GetDeviceHandle();
+        DWORD bytes = 0;
 
+        switch (Ioctl)
+        {
+        case IOCTL_PROTECT_ADD:
+            PPROTECT_INPUT pInput = static_cast<PPROTECT_INPUT>(IoctlInfo);
+            ULONG InputLength = sizeof(PROTECT_INPUT);
+
+            DeviceIoControl(
+                Handle,
+                Ioctl,
+                pInput,
+                InputLength,
+                NULL,
+                0,
+                &bytes,
+                NULL);
+            break;
+        
+        case IOCTL_PROTECT_CLEAR:
+            DeviceIoControl(
+                Handle,
+                Ioctl,
+                NULL,
+                0,
+                NULL,
+                0,
+                &bytes,
+                NULL);
+            break;
+
+        case IOCTL_PROTECT_ENUM:
+            break;
+        }
+    }
+    catch (runtime_error& e)
+    {
+        e.what();
+        cout << "Last error code: 0x" << hex << GetLastError() << endl;
+    }
 }

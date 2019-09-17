@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <exception>
+#include <winioctl.h>
 #include "../Protect/UserKernelBridge.h"
 
 class SCHandle
