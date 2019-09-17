@@ -2,13 +2,13 @@
 
 using namespace std;
 
-BOOL InstallDriver(
+VOID
+InstallDriver(
     _In_ LPCWSTR DriverInstallPath
 )
 {
     // Ensure driver is uninstalled
-    if (!UninstallDriver())
-        return FALSE;
+    UninstallDriver();
 
     // Driver is assumed to be in the same directory
     // Copy the driver into the system driver directory
@@ -65,16 +65,10 @@ BOOL InstallDriver(
 
     if (!Status)
         throw runtime_error("InstallDriver: StartServiceW failed");
-
-    if (SCMHandle)
-        CloseServiceHandle(SCMHandle);
-    if (ServiceHandle)
-        CloseServiceHandle(ServiceHandle);
-
-    return TRUE;
 }
 
-BOOL UninstallDriver(
+VOID
+UninstallDriver(
 )
 {
     // Open a handle to the Service Control Manager
@@ -85,11 +79,9 @@ BOOL UninstallDriver(
     );
  
     if (SCMHandle == NULL)
-    {
-        cout << "UninstallDriver: OpenSCManagerW failed with " <<
-            hex << GetLastError() << endl;
-        return FALSE;
-    }
+        throw runtime_error("UninstallDriver: OpenSCManagerW failed");
+
+    SCHandle SCMHandleWrapper(SCMHandle);
 
     // Open a handle to the service
     auto ServiceHandle = OpenService(
@@ -100,14 +92,12 @@ BOOL UninstallDriver(
 
     if (ServiceHandle == NULL)
     {
-        cout << "UninstallDriver: OpenService failed with " <<
-            hex << GetLastError() << endl;
-
         if (GetLastError() == ERROR_SERVICE_DOES_NOT_EXIST)
-            return TRUE;
-
-        return FALSE;
+            return;
+        throw runtime_error("UninstallDriver: OpenService failed");
     }
+
+    SCHandle ServiceHandleWrapper(ServiceHandle);
 
     SERVICE_STATUS ServiceStatus;
     
@@ -117,12 +107,8 @@ BOOL UninstallDriver(
         &ServiceStatus);
 
     if (!Status)
-    {
-        cout << "UninstallDriver: ControlService failed with " <<
-            hex << GetLastError() << endl;
-        return FALSE;
-    }
-
+        throw runtime_error("UninstallDriver: ControlService failed");
+    
     SERVICE_STATUS_PROCESS ServiceStatusProcess;
     DWORD Bytes;
 
@@ -137,11 +123,7 @@ BOOL UninstallDriver(
         );
 
         if (!QueryStatus)
-        {
-            cout << "UninstallDriver: QueryServiceStatusEx failed with " <<
-                hex << GetLastError() << endl;
-            return FALSE;
-        }
+            throw runtime_error("UninstallDriver: QueryServiceStatusEx failed");
 
         if (ServiceStatusProcess.dwCurrentState == SERVICE_STOPPED)
             break;
@@ -150,16 +132,5 @@ BOOL UninstallDriver(
     Status = DeleteService(ServiceHandle);
 
     if (!Status)
-    {
-        cout << "UninstallDriver: DeleteService failed with " <<
-            hex << GetLastError() << endl;
-        return FALSE;
-    }
-
-    if (ServiceHandle)
-        CloseServiceHandle(ServiceHandle);
-    if (SCMHandle)
-        CloseServiceHandle(SCMHandle);
-
-    return TRUE;
+        throw runtime_error("UninstallDriver: DeleteService failed");
 }

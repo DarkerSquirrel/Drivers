@@ -36,6 +36,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Install.cpp" />
+    <ClCompile Include="Interface.cpp" />
     <ClCompile Include="ProtectCtrl.cpp" />
   </ItemGroup>
   <ItemGroup>

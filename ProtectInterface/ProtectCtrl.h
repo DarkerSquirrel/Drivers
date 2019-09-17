@@ -31,11 +31,11 @@ public:
     }
 };
 
-BOOL
+VOID
 InstallDriver(
     _In_ LPCWSTR DriverInstallDirectory
 );
 
-BOOL
+VOID
 UninstallDriver(
 );
