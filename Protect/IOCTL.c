@@ -4,19 +4,38 @@
 
 NTSTATUS
 IOCTLAddProcessToWatchList(
-    _In_ PPROTECT_INPUT pInput
+    _In_ PDEVICE_OBJECT pDeviceObject,
+    _In_ PIRP pIRP
 )
 {
     PAGED_CODE();
+    UNREFERENCED_PARAMETER(pDeviceObject);
+    NTSTATUS Status = STATUS_UNSUCCESSFUL;
 
-    NTSTATUS Status = STATUS_SUCCESS;
+    PPROTECT_INPUT pInput = (PPROTECT_INPUT)pIRP->AssociatedIrp.SystemBuffer;
+    PIO_STACK_LOCATION pIrpStack = IoGetCurrentIrpStackLocation(pIRP);
+
+    ASSERT(pIrpStack != NULL);
+
+    ULONG InputLength = pIrpStack->Parameters.DeviceIoControl.InputBufferLength;
+
+    if (InputLength < sizeof(PROTECT_INPUT))
+    {
+        DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, 
+            "IOCTLAddProcessToWatchList: Naughty input, incorrect size. Got => %u Expected => %u",
+            InputLength,
+            sizeof(PROTECT_INPUT)
+        );
+
+        goto Exit;
+    }
 
     PWATCH_PROCESS_ENTRY CurrentEntry = (PWATCH_PROCESS_ENTRY)ExAllocatePoolWithTag(PagedPool, sizeof(WATCH_PROCESS_ENTRY), LIST_POOL_TAG);
 
     if (CurrentEntry == NULL)
     {
-        DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "IOCTLAddProcessToWatch: ExAllocatePool failed");
-        return;
+        DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "IOCTLAddProcessToWatchList: ExAllocatePool failed");
+        goto Exit;
     }
 
     size_t InputLength = wcslen(pInput->Name);
@@ -27,15 +46,16 @@ IOCTLAddProcessToWatchList(
     else
     {
         DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL,
-            "IOCTLAddProcessToWatch: Input Name => %ls, Input Size => %llu",
+            "IOCTLAddProcessToWatchList: Input Name => %ls, Input Size => %llu",
             pInput->Name, InputLength);
-        Status = STATUS_UNSUCCESSFUL;
         goto Exit;
     }
 
     KeAcquireGuardedMutex(&ProcessWatchListMutex);
     InsertTailList(&ProcessWatchList, &CurrentEntry->List);
     KeReleaseGuardedMutex(&ProcessWatchListMutex);
+
+    Status = STATUS_SUCCESS;
 
 Exit:
     if (!NT_SUCCESS(Status))
@@ -49,32 +69,43 @@ Exit:
 
 NTSTATUS
 IOCTLEnumerateWatchList(
-    _In_ UINT64 OutputLen,
-    _Out_ PENUMERATE_PROCESS_INFO OutputBuffer
+    _In_ PDEVICE_OBJECT pDeviceObject,
+    _Inout_ PIRP pIRP
 )
 {
+    PAGED_CODE();
+    UNREFERENCED_PARAMETER(pDeviceObject);
+
     NTSTATUS Status = STATUS_SUCCESS;
 
-    if (OutputLen < sizeof(OutputBuffer))
+    PENUMERATE_PROCESS_INFO pOutput = (PENUMERATE_PROCESS_INFO)pIRP->AssociatedIrp.SystemBuffer;
+    PIO_STACK_LOCATION IrpStackLocation = IoGetCurrentIrpStackLocation(pIRP);
+
+    ASSERT(IrpStackLocation != NULL);
+
+    ULONG OutputLen = IrpStackLocation->Parameters.DeviceIoControl.OutputBufferLength;
+    
+    if (OutputLen < sizeof(ENUMERATE_PROCESS_INFO))
     {
         Status = STATUS_BUFFER_OVERFLOW;
         goto Exit;
     }
 
-    memset(OutputBuffer, 0, sizeof(ENUMERATE_PROCESS_INFO));
+    memset(pOutput, 0, sizeof(ENUMERATE_PROCESS_INFO));
 
     KeAcquireGuardedMutex(&ProcessWatchListMutex);
 
-    OutputBuffer->WatchCount = CurrentWatchCount;
+    pOutput->WatchCount = CurrentWatchCount;
     PLIST_ENTRY CurrEntry = ProcessWatchList.Flink;
     int CurrCount = 0;
 
     while (CurrEntry != NULL)
     {
-        memcpy(OutputBuffer->Names[CurrCount],
+        memcpy(pOutput->Names[CurrCount],
             CONTAINING_RECORD(CurrEntry, WATCH_PROCESS_ENTRY, List)->Name,
             MAX_PATH + 1);
         CurrEntry = CurrEntry->Flink;
+        CurrCount++;
     }
 
     KeReleaseGuardedMutex(&ProcessWatchListMutex);
@@ -85,8 +116,14 @@ Exit:
 
 NTSTATUS
 IOCTLClearWatchList(
+    _In_ PDEVICE_OBJECT pDeviceObject,
+    _In_ PIRP pIRP
 )
 {
+    PAGED_CODE();
+    UNREFERENCED_PARAMETER(pDeviceObject);
+    UNREFERENCED_PARAMETER(pIRP);
+
     NTSTATUS Status = STATUS_SUCCESS;
 
     KeAcquireGuardedMutex(&ProcessWatchListMutex);

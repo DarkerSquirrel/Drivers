@@ -10,6 +10,8 @@ _Dispatch_type_(IRP_MJ_DEVICE_CONTROL)  DRIVER_DISPATCH DeviceControl;
 
 DRIVER_UNLOAD DriverUnload;
 
+BOOLEAN CreateRoutineEnabled = FALSE;
+
 NTSTATUS
 DriverEntry(
     _In_ PDRIVER_OBJECT DriverObject,
@@ -62,11 +64,21 @@ DriverEntry(
     
     SymLinkCreated = TRUE;
 
-    PsSetCreateProcessNotifyRoutineEx(CreateProcessNotifyRoutine,FALSE);
+    Status = PsSetCreateProcessNotifyRoutineEx(CreateProcessNotifyRoutine, FALSE);
 
+    if (!NT_SUCCESS(Status))
+        goto Exit;
+
+    CreateRoutineEnabled = TRUE;
 Exit:
     if (!NT_SUCCESS(Status))
     {
+        if (CreateRoutineEnabled)
+        {
+            PsSetCreateProcessNotifyRoutineEx(CreateProcessNotifyRoutine, TRUE);
+            CreateRoutineEnabled = FALSE;
+        }
+       
         if (SymLinkCreated)
             IoDeleteSymbolicLink(&DosDevicesName);
         if (pDeviceObject != NULL)
@@ -180,10 +192,10 @@ DeviceControl(
 
     switch (pIRPStack->Parameters.DeviceIoControl.IoControlCode)
     {
-    case IOCTL_PROTECT:
+    case IOCTL_PROTECT_ADD:
         Status = ControlProtect(pDeviceObject, pInput);
         break;
-    case IOCTL_PROTECT_REMOVE:
+    case IOCTL_PROTECT_CLEAR:
         Status = ControlRemoveProtect(pDeviceObject, pInput);
         break;
     case IOCTL_PROTECT_ENUM:
@@ -207,6 +219,12 @@ DriverUnload(
     if (!NT_SUCCESS(Status))
         DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "DriverUnload: IoDeleteSymbolicLink failed with 0x%x", Status);
     
-    IoDeleteDevice(pDriverObject->DeviceObject);
-}
+    if (pDriverObject->DeviceObject != NULL)
+        IoDeleteDevice(pDriverObject->DeviceObject);
 
+    if (CreateRoutineEnabled)
+    {
+        PsSetCreateProcessNotifyRoutineEx(CreateProcessNotifyRoutine, TRUE);
+        CreateRoutineEnabled = FALSE;
+    }
+}
