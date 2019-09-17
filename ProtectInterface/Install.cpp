@@ -19,11 +19,7 @@ BOOL InstallDriver(
     );
 
     if (!Status)
-    {
-        cout << "InstallDriver: CopyFileW failed with " <<
-            hex << GetLastError() << endl;
-        return FALSE;
-    }
+        throw runtime_error("InstallDriver: CopyFileW failed");
 
     // Open a handle to the Service Control Manager
     // Required to start a service
@@ -34,11 +30,9 @@ BOOL InstallDriver(
     );
 
     if (SCMHandle == NULL)
-    {
-        cout << "InstallDriver: OpenSCManagerW failed with " <<
-            hex << GetLastError() << endl;
-        return FALSE;
-    }
+        throw runtime_error("InstallDriver: OpenSCManagerW failed");
+
+    SCHandle SCMHandleWrapper(SCMHandle);
 
     // Create the service
     auto ServiceHandle = CreateServiceW(
@@ -58,11 +52,9 @@ BOOL InstallDriver(
     );
 
     if (ServiceHandle == NULL)
-    {
-        cout << "InstallDriver: CreateServiceW failed with " <<
-            hex << GetLastError() << endl;
-        return FALSE;
-    }
+        throw runtime_error("InstallDriver: CreateServiceW failed");
+
+    SCHandle ServiceHandleWrapper(ServiceHandle);
 
     // Start the service
     Status = StartServiceW(
@@ -72,11 +64,7 @@ BOOL InstallDriver(
     );
 
     if (!Status)
-    {
-        cout << "InstallDriver: StartServiceW failed with " <<
-            hex << GetLastError() << endl;
-        return FALSE;
-    }
+        throw runtime_error("InstallDriver: StartServiceW failed");
 
     if (SCMHandle)
         CloseServiceHandle(SCMHandle);
