@@ -43,6 +43,9 @@ DriverEntry(
         goto Exit;
 
     KeInitializeGuardedMutex(&CallbackMutex);
+    KeInitializeGuardedMutex(&ProcessWatchListMutex);
+    KeInitializeGuardedMutex(&PidWatchListMutex);
+
     InitializeListHead(&ProcessWatchList);
     InitializeListHead(&PidWatchList);
 

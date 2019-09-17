@@ -90,7 +90,8 @@ IOCTLClearWatchList(
     NTSTATUS Status = STATUS_SUCCESS;
 
     KeAcquireGuardedMutex(&ProcessWatchListMutex);
-    
+    KeAcquireGuardedMutex(&PidWatchListMutex);
+
     CurrentWatchCount = 0;
     
     if (!IsListEmpty(&ProcessWatchList))
@@ -100,6 +101,14 @@ IOCTLClearWatchList(
         ExFreePoolWithTag(WatchProcess, LIST_POOL_TAG);
     }
 
+    if (!IsListEmpty(&PidWatchList))
+    {
+        PLIST_ENTRY Removed = RemoveHeadList(&PidWatchList);
+        PWATCH_PID_ENTRY WatchPid = CONTAINING_RECORD(Removed, WATCH_PID_ENTRY, List);
+        ExFreePoolWithTag(WatchPid, PID_POOL_TAG);
+    }
+
+    KeReleaseGuardedMutex(&PidWatchListMutex);
     KeReleaseGuardedMutex(&ProcessWatchListMutex);
 
 Exit:

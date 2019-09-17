@@ -3,12 +3,16 @@
 
 #define MAX_PATH 256
 #define LIST_POOL_TAG 'torP'
+#define PID_POOL_TAG 'diPP'
 #define MAX_WATCH_COUNT 10
 
 extern KGUARDED_MUTEX CallbackMutex;
 extern KGUARDED_MUTEX ProcessWatchListMutex;
+extern KGUARDED_MUTEX PidWatchListMutex;
+
 extern LIST_ENTRY ProcessWatchList;
 extern LIST_ENTRY PidWatchList;
+
 extern UINT32 CurrentWatchCount;
 
 typedef struct _CALLBACK_PARAMS
@@ -47,6 +51,14 @@ typedef struct _WATCH_PID_ENTRY
     LIST_ENTRY List;
     HANDLE ProcessId;
 } WATCH_PID_ENTRY, *PWATCH_PID_ENTRY;
+
+VOID
+RegisterCallbacks(
+);
+
+VOID
+UnRegisterCallbacks(
+);
 
 OB_PREOP_CALLBACK_STATUS
 PreOpCallback(

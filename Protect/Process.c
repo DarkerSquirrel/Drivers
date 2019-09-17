@@ -13,7 +13,6 @@ CreateProcessNotifyRoutine(
     DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_TRACE_LEVEL, "CreateProcessNotifyRoutine: Entering with %wZ\n", CreateInfo->ImageFileName);
 
     KeAcquireGuardedMutex(&ProcessWatchListMutex);
-    KeAcquireGuardedMutex(&PidWatchList);
     PLIST_ENTRY CurrEntry = ProcessWatchList.Flink;
 
     while (CurrEntry != NULL)
@@ -21,12 +20,19 @@ CreateProcessNotifyRoutine(
         PWCHAR CurrName = CONTAINING_RECORD(CurrEntry, WATCH_PROCESS_ENTRY, List)->Name;
         if (wcscmp(CreateInfo->ImageFileName, CurrName) == 0)
         {
-            WATCH_PID_ENTRY CurrPidEntry;
-            CurrPidEntry.ProcessId = ProcessId;
-            InsertHeadList(&PidWatchList, &CurrPidEntry.List);
+            PWATCH_PID_ENTRY CurrPidEntry = ExAllocatePoolWithTag(PagedPool, sizeof(WATCH_PID_ENTRY), PID_POOL_TAG);
+            
+            if (CurrPidEntry == NULL)
+                goto ReleaseMutex;
+
+            CurrPidEntry->ProcessId = ProcessId;
+            KeAcquireGuardedMutex(&PidWatchList);
+            InsertHeadList(&PidWatchList, &CurrPidEntry->List);
+            KeReleaseGuardedMutex(&PidWatchList);
         }
         CurrEntry = CurrEntry->Flink;
     }
-    KeReleaseGuardedMutex(&PidWatchList);
+
+ReleaseMutex:
     KeReleaseGuardedMutex(&ProcessWatchListMutex);
 }
