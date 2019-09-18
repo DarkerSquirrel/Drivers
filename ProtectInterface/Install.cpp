@@ -102,8 +102,8 @@ UninstallDriver(
     SERVICE_STATUS ServiceStatus;
     
     auto Status = ControlService(
-        ServiceHandle, 
-        SERVICE_CONTROL_STOP, 
+        ServiceHandle,
+        SERVICE_CONTROL_STOP,
         &ServiceStatus);
 
     if (!Status)

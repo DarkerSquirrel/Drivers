@@ -18,11 +18,12 @@ IOCTLAddProcessToWatchList(
     ASSERT(pIrpStack != NULL);
 
     ULONG InputLength = pIrpStack->Parameters.DeviceIoControl.InputBufferLength;
+    PWATCH_PROCESS_ENTRY CurrentEntry = NULL;
 
     if (InputLength < sizeof(PROTECT_INPUT))
     {
         DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, 
-            "IOCTLAddProcessToWatchList: Naughty input, incorrect size. Got => %u Expected => %u",
+            "IOCTLAddProcessToWatchList: Naughty input, incorrect size. Got => %u Expected => %llu",
             InputLength,
             sizeof(PROTECT_INPUT)
         );
@@ -30,7 +31,7 @@ IOCTLAddProcessToWatchList(
         goto Exit;
     }
 
-    PWATCH_PROCESS_ENTRY CurrentEntry = (PWATCH_PROCESS_ENTRY)ExAllocatePoolWithTag(PagedPool, sizeof(WATCH_PROCESS_ENTRY), LIST_POOL_TAG);
+    CurrentEntry = (PWATCH_PROCESS_ENTRY)ExAllocatePoolWithTag(PagedPool, sizeof(WATCH_PROCESS_ENTRY), LIST_POOL_TAG);
 
     if (CurrentEntry == NULL)
     {
@@ -38,18 +39,7 @@ IOCTLAddProcessToWatchList(
         goto Exit;
     }
 
-    size_t InputLength = wcslen(pInput->Name);
-    if (InputLength > 0 && InputLength <= MAX_PATH)
-    {
-        memcpy(CurrentEntry->Name, pInput->Name, InputLength);
-    }
-    else
-    {
-        DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL,
-            "IOCTLAddProcessToWatchList: Input Name => %ls, Input Size => %llu",
-            pInput->Name, InputLength);
-        goto Exit;
-    }
+    memcpy(CurrentEntry->Name, pInput->Name, sizeof(CurrentEntry->Name));
 
     KeAcquireGuardedMutex(&ProcessWatchListMutex);
     InsertTailList(&ProcessWatchList, &CurrentEntry->List);
@@ -69,7 +59,7 @@ Exit:
 
 NTSTATUS
 IOCTLEnumerateWatchList(
-    _In_ PDEVICE_OBJECT pDeviceObject,
+    _In_    PDEVICE_OBJECT pDeviceObject,
     _Inout_ PIRP pIRP
 )
 {
@@ -148,6 +138,5 @@ IOCTLClearWatchList(
     KeReleaseGuardedMutex(&PidWatchListMutex);
     KeReleaseGuardedMutex(&ProcessWatchListMutex);
 
-Exit:
     return Status;
 }

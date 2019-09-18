@@ -29,7 +29,6 @@ DriverEntry(
     
     PDEVICE_OBJECT pDeviceObject;
     BOOLEAN SymLinkCreated = FALSE;
-    BOOLEAN NotifyRoutineSet = FALSE;
 
     Status = IoCreateDevice(
         DriverObject,

@@ -24,52 +24,60 @@ GetDeviceHandle(
 
 VOID
 SendIOCTL(
-    ULONG Ioctl,
-    PVOID IoctlInfo
+    _In_  ULONG Ioctl,
+    _In_  LPVOID IoctlInput,
+    _Out_ LPVOID IoctlOutput
 )
 noexcept
 {
-    try 
+    try
     {
         auto Handle = GetDeviceHandle();
         DWORD bytes = 0;
+        BOOL Status;
+
+        LPVOID pInput       = IoctlInput;
+        LPVOID pOutput      = IoctlOutput;
+        DWORD InputLength   = 0;
+        DWORD OutputLength  = 0;
 
         switch (Ioctl)
         {
         case IOCTL_PROTECT_ADD:
-            PPROTECT_INPUT pInput = static_cast<PPROTECT_INPUT>(IoctlInfo);
-            ULONG InputLength = sizeof(PROTECT_INPUT);
-
-            DeviceIoControl(
-                Handle,
-                Ioctl,
-                pInput,
-                InputLength,
-                NULL,
-                0,
-                &bytes,
-                NULL);
+            InputLength = sizeof(PROTECT_INPUT);
             break;
         
         case IOCTL_PROTECT_CLEAR:
-            DeviceIoControl(
-                Handle,
-                Ioctl,
-                NULL,
-                0,
-                NULL,
-                0,
-                &bytes,
-                NULL);
             break;
 
         case IOCTL_PROTECT_ENUM:
+            OutputLength = sizeof(ENUMERATE_PROCESS_INFO);
             break;
         }
+
+        Status = DeviceIoControl(
+            Handle,
+            Ioctl,
+            pInput,
+            InputLength,
+            pOutput,
+            OutputLength,
+            &bytes,
+            NULL);
+
+        if (!Status)
+            wcout << L"Operation failed" << endl;
     }
     catch (runtime_error& e)
     {
-        e.what();
-        cout << "Last error code: 0x" << hex << GetLastError() << endl;
+        cout << e.what() << "\n" << 
+            "Last error code: 0x" << hex << GetLastError() << endl;
     }
+}
+
+VOID
+ProtectControl(
+)
+{
+
 }

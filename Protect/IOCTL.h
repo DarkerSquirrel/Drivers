@@ -2,15 +2,18 @@
 
 NTSTATUS
 IOCTLAddProcessToWatchList(
-    _In_ PPROTECT_INPUT pInput
+    _In_ PDEVICE_OBJECT pDeviceObject,
+    _In_ PIRP pIRP
 );
 
 NTSTATUS
 IOCTLEnumerateWatchList(
-    _In_ UINT64 OutputLen,
-    _Out_ PENUMERATE_PROCESS_INFO OutputBuffer
+    _In_ PDEVICE_OBJECT pDeviceObject,
+    _Inout_ PIRP pIRP
 );
 
 NTSTATUS
 IOCTLClearWatchList(
+    _In_ PDEVICE_OBJECT pDeviceObject, 
+    _In_ PIRP pIRP
 );

@@ -54,8 +54,6 @@ RegisterCallbacks(
         DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "RegisterCallbacks: ObRegisterCallbacks failed with 0x%x", Status);
     else
         CallbackInstalled = TRUE;
-Exit:
-    return Status;
 }
 
 VOID
@@ -107,7 +105,6 @@ PreOpCallback(
 
         if (PreOpInfo->ObjectType == *PsProcessType)
         {
-            HANDLE ProcId = PsGetProcessId(PsGetCurrentProcess());
             if (PreOpInfo->Object == PsGetCurrentProcess())
                 goto ReleaseMutex;
             if (PreOpInfo->Object != CurrPid)
@@ -146,7 +143,7 @@ PreOpCallback(
 
 ReleaseMutex:
     KeReleaseGuardedMutex(&PidWatchListMutex);
-Exit:
+
     return OB_PREOP_SUCCESS;
 }
 
