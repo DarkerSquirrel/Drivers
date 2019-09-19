@@ -7,8 +7,16 @@ InstallDriver(
     _In_ LPCWSTR DriverInstallPath
 )
 {
-    // Ensure driver is uninstalled
-    UninstallDriver();
+    try
+    {
+        // Ensure driver is uninstalled
+        UninstallDriver();
+    }
+    catch (runtime_error& err)
+    {
+        cout << err.what() << "\n" <<
+            hex << GetLastError() << endl;
+    }
 
     // Driver is assumed to be in the same directory
     // Copy the driver into the system driver directory

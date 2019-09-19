@@ -39,3 +39,16 @@ InstallDriver(
 VOID
 UninstallDriver(
 );
+
+VOID
+ProtectAdd(
+    _In_ LPWSTR pProtectName
+);
+
+VOID
+ProtectClear(
+);
+
+VOID
+ProtectEnum(
+);

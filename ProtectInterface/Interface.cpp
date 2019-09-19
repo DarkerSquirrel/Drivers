@@ -24,9 +24,9 @@ GetDeviceHandle(
 
 VOID
 SendIOCTL(
-    _In_  ULONG Ioctl,
-    _In_  LPVOID IoctlInput,
-    _Out_ LPVOID IoctlOutput
+    _In_        ULONG Ioctl,
+    _In_opt_    LPVOID IoctlInput,
+    _Out_opt_   LPVOID IoctlOutput
 )
 noexcept
 {
@@ -45,12 +45,14 @@ noexcept
         {
         case IOCTL_PROTECT_ADD:
             InputLength = sizeof(PROTECT_INPUT);
+            pOutput = nullptr;
             break;
         
         case IOCTL_PROTECT_CLEAR:
             break;
 
         case IOCTL_PROTECT_ENUM:
+            pInput = nullptr;
             OutputLength = sizeof(ENUMERATE_PROCESS_INFO);
             break;
         }
@@ -66,7 +68,9 @@ noexcept
             NULL);
 
         if (!Status)
-            wcout << L"Operation failed" << endl;
+            cout << "Operation failed" << endl;
+
+        cout << "Operation completed successfully" << endl;
     }
     catch (runtime_error& e)
     {
@@ -76,8 +80,32 @@ noexcept
 }
 
 VOID
-ProtectControl(
+ProtectAdd(
+    _In_ LPWSTR pProtectName
 )
 {
+    SendIOCTL(IOCTL_PROTECT_ADD, reinterpret_cast<LPVOID>(pProtectName), nullptr);
+}
 
+VOID
+ProtectClear(
+)
+{
+    SendIOCTL(IOCTL_PROTECT_CLEAR, nullptr, nullptr);
+}
+
+VOID
+ProtectEnum(
+)
+{
+    ENUMERATE_PROCESS_INFO EnumerationInfo;
+
+    SendIOCTL(IOCTL_PROTECT_ENUM, nullptr, reinterpret_cast<LPVOID>(&EnumerationInfo));
+
+    cout << "Watching: " << EnumerationInfo.WatchCount << " processes\n";
+    
+    for (auto i = 0; i < EnumerationInfo.WatchCount; i++)
+    {
+        cout << EnumerationInfo.Names[i] << endl;
+    }
 }
