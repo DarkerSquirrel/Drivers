@@ -7,23 +7,42 @@ CreateProcessNotifyRoutine(
     _In_opt_ PPS_CREATE_NOTIFY_INFO CreateInfo
 )
 {
+    UNREFERENCED_PARAMETER(Process);
+ 
     if (CreateInfo == NULL)
         return;
 
     DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_TRACE_LEVEL, "CreateProcessNotifyRoutine: Entering with %wZ\n", CreateInfo->ImageFileName);
 
-    UNREFERENCED_PARAMETER(Process);
+    PLIST_ENTRY CurrEntry = ProcessWatchList.Flink;
+
+    WCHAR ProcessPath[MAX_PATH + 1];
+    PWCHAR ProcessToken;
+    memset(ProcessPath, 0, MAX_PATH + 1);
+
+    memcpy(ProcessPath, CreateInfo->ImageFileName->Buffer, CreateInfo->ImageFileName->Length);
+    ProcessToken = ProcessPath;
+
+    while (wcschr(ProcessToken, L'\\') != NULL)
+    {
+        ProcessToken = wcschr(ProcessToken, L'\\') + 1;
+    }
+
+    DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_TRACE_LEVEL, "Process name after stripping: %ls\n", ProcessToken);
+
+    if (ProcessPath == NULL)
+        goto Exit;
 
     KeAcquireGuardedMutex(&ProcessWatchListMutex);
 
     if (IsListEmpty(&ProcessWatchList))
         goto ReleaseMutex;
 
-    PLIST_ENTRY CurrEntry = ProcessWatchList.Flink;
-    while (CurrEntry != NULL)
+    while (CurrEntry != &ProcessWatchList)
     {
         PWCHAR CurrName = CONTAINING_RECORD(CurrEntry, WATCH_PROCESS_ENTRY, List)->Name;
-        if (wcscmp(CreateInfo->ImageFileName->Buffer, CurrName) == 0)
+        
+        if (wcscmp(ProcessToken, CurrName) == 0)
         {
             PWATCH_PID_ENTRY CurrPidEntry = ExAllocatePoolWithTag(PagedPool, sizeof(WATCH_PID_ENTRY), PID_POOL_TAG);
             
@@ -31,6 +50,7 @@ CreateProcessNotifyRoutine(
                 goto ReleaseMutex;
 
             CurrPidEntry->ProcessId = ProcessId;
+            DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "Match found, adding PID %p to protected list\n", ProcessId);
             KeAcquireGuardedMutex(&PidWatchListMutex);
             InsertHeadList(&PidWatchList, &CurrPidEntry->List);
             KeReleaseGuardedMutex(&PidWatchListMutex);
@@ -40,5 +60,6 @@ CreateProcessNotifyRoutine(
 
 ReleaseMutex:
     KeReleaseGuardedMutex(&ProcessWatchListMutex);
+Exit:
     return;
 }

@@ -1,6 +1,7 @@
 #include "Protect.h"
 #include "UserKernelBridge.h"
 #include "IOCTL.h"
+#include "Misc.h"
 
 NTSTATUS
 IOCTLAddProcessToWatchList(
@@ -42,6 +43,7 @@ IOCTLAddProcessToWatchList(
     memcpy(CurrentEntry->Name, pInput->Name, sizeof(CurrentEntry->Name));
 
     KeAcquireGuardedMutex(&ProcessWatchListMutex);
+    CurrentWatchCount++;
     InsertTailList(&ProcessWatchList, &CurrentEntry->List);
     KeReleaseGuardedMutex(&ProcessWatchListMutex);
 
@@ -94,7 +96,7 @@ IOCTLEnumerateWatchList(
 
     PLIST_ENTRY CurrEntry = ProcessWatchList.Flink;
 
-    while (CurrEntry != NULL)
+    while (CurrEntry != &ProcessWatchList)
     {
         memcpy(pOutput->Names[CurrCount],
             CONTAINING_RECORD(CurrEntry, WATCH_PROCESS_ENTRY, List)->Name,
@@ -107,7 +109,7 @@ ReleaseMutex:
     KeReleaseGuardedMutex(&ProcessWatchListMutex);
 
 Exit:
-    pIRP->IoStatus.Information = CurrCount * (MAX_PATH + 1);
+    pIRP->IoStatus.Information = CurrCount * (MAX_PATH + 1) + sizeof(CurrentWatchCount);
     return Status;
 }
 
@@ -123,27 +125,7 @@ IOCTLClearWatchList(
 
     NTSTATUS Status = STATUS_SUCCESS;
 
-    KeAcquireGuardedMutex(&ProcessWatchListMutex);
-    KeAcquireGuardedMutex(&PidWatchListMutex);
-
-    CurrentWatchCount = 0;
-    
-    while (!IsListEmpty(&ProcessWatchList))
-    {
-        PLIST_ENTRY Removed = RemoveHeadList(&ProcessWatchList);
-        PWATCH_PROCESS_ENTRY WatchProcess = CONTAINING_RECORD(Removed, WATCH_PROCESS_ENTRY, List);
-        ExFreePoolWithTag(WatchProcess, LIST_POOL_TAG);
-    }
-
-    while (!IsListEmpty(&PidWatchList))
-    {
-        PLIST_ENTRY Removed = RemoveHeadList(&PidWatchList);
-        PWATCH_PID_ENTRY WatchPid = CONTAINING_RECORD(Removed, WATCH_PID_ENTRY, List);
-        ExFreePoolWithTag(WatchPid, PID_POOL_TAG);
-    }
-
-    KeReleaseGuardedMutex(&PidWatchListMutex);
-    KeReleaseGuardedMutex(&ProcessWatchListMutex);
+    ClearWatchList();
 
     pIRP->IoStatus.Information = 0;
     return Status;

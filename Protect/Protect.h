@@ -14,6 +14,8 @@ extern LIST_ENTRY PidWatchList;
 
 extern ULONG CurrentWatchCount;
 
+extern BOOLEAN CallbackInstalled;
+
 typedef struct _CALLBACK_PARAMS
 {
 	ACCESS_MASK AccessClear;
@@ -51,7 +53,7 @@ typedef struct _WATCH_PID_ENTRY
     HANDLE ProcessId;
 } WATCH_PID_ENTRY, *PWATCH_PID_ENTRY;
 
-VOID
+NTSTATUS
 RegisterCallbacks(
 );
 

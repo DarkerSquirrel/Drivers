@@ -1,6 +1,7 @@
 #include "Protect.h"
 #include "UserKernelBridge.h"
 #include "IOCTL.h"
+#include "Misc.h"
 
 DRIVER_INITIALIZE DriverEntry;
 
@@ -71,6 +72,12 @@ DriverEntry(
         goto Exit;
 
     CreateRoutineEnabled = TRUE;
+
+    Status = RegisterCallbacks();
+
+    if (!NT_SUCCESS(Status))
+        goto Exit;
+
 Exit:
     if (!NT_SUCCESS(Status))
     {
@@ -80,6 +87,8 @@ Exit:
             CreateRoutineEnabled = FALSE;
         }
        
+        if (CallbackInstalled)
+            UnRegisterCallbacks();
         if (SymLinkCreated)
             IoDeleteSymbolicLink(&DosDevicesName);
         if (pDeviceObject != NULL)
@@ -183,6 +192,9 @@ DriverUnload(
     NTSTATUS Status = STATUS_SUCCESS;
     UNICODE_STRING DosDevicesName;
     RtlInitUnicodeString(&DosDevicesName, DOS_DEVICES_NAME);
+
+    ClearWatchList();
+    UnRegisterCallbacks();
 
     Status = IoDeleteSymbolicLink(&DosDevicesName);
     

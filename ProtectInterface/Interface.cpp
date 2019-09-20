@@ -74,7 +74,9 @@ noexcept
         }
 
         cout << "Operation completed successfully" << endl;
-        cout << "Output contains: " << bytes << " bytes" << endl;
+        
+        if (pOutput != nullptr)
+            cout << "Output contains: 0x" << hex << bytes << " bytes" << endl;
     }
     catch (runtime_error& e)
     {
@@ -111,6 +113,6 @@ ProtectEnum(
     
     for (ULONG i = 0; i < EnumerationInfo.WatchCount; i++)
     {
-        cout << EnumerationInfo.Names[i] << endl;
+        wcout << EnumerationInfo.Names[i] << endl;
     }
 }

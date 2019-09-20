@@ -1,7 +1,8 @@
 #include "Protect.h"
 #include "UserKernelBridge.h"
 
-#define PROCESS_CREATE_PROCESS  0x0001
+#define PROCESS_TERMINATE       0x0001
+#define PROCESS_CREATE_PROCESS  0x0080
 #define PROCESS_CREATE_THREAD   0x0002
 #define PROCESS_VM_READ         0x0010
 #define PROCESS_VM_WRITE        0x0020
@@ -23,11 +24,16 @@ PVOID RegistrationHandle = NULL;
 
 ULONG CurrentWatchCount = 0;
 
-VOID
+NTSTATUS
 RegisterCallbacks(
 )
 {
     NTSTATUS Status = STATUS_SUCCESS;
+ 
+    if (CallbackInstalled)
+        return Status;
+
+    KeAcquireGuardedMutex(&CallbackMutex);
 
     RtlInitUnicodeString(&Altitude, ALTITUDE);
     OperationRegistration[0].ObjectType = PsProcessType;
@@ -35,7 +41,7 @@ RegisterCallbacks(
     OperationRegistration[0].PreOperation = PreOpCallback;
     OperationRegistration[0].PostOperation = PostOpCallback;
 
-    OperationRegistration[1].ObjectType = PsProcessType;
+    OperationRegistration[1].ObjectType = PsThreadType;
     OperationRegistration[1].Operations |= OB_OPERATION_HANDLE_CREATE | OB_OPERATION_HANDLE_DUPLICATE;
     OperationRegistration[1].PreOperation = PreOpCallback;
     OperationRegistration[1].PostOperation = PostOpCallback;
@@ -46,14 +52,17 @@ RegisterCallbacks(
     CallbackRegistration.RegistrationContext = NULL;
     CallbackRegistration.OperationRegistration = OperationRegistration;
 
-    KeAcquireGuardedMutex(&CallbackMutex);
     Status = ObRegisterCallbacks(&CallbackRegistration, &RegistrationHandle);
+    
     KeReleaseGuardedMutex(&CallbackMutex);
 
     if (!NT_SUCCESS(Status))
-        DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "RegisterCallbacks: ObRegisterCallbacks failed with 0x%x", Status);
+        DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL,
+            "RegisterCallbacks: ObRegisterCallbacks failed with 0x%x", Status);
     else
         CallbackInstalled = TRUE;
+
+    return Status;
 }
 
 VOID
@@ -80,6 +89,7 @@ PreOpCallback(
     PermissionsToRemove |= PROCESS_DUP_HANDLE;
     PermissionsToRemove |= PROCESS_VM_READ;
     PermissionsToRemove |= PROCESS_VM_WRITE;
+    PermissionsToRemove |= PROCESS_TERMINATE;
 
     PACCESS_MASK ModifiedPermissions = NULL;
     
@@ -95,45 +105,71 @@ PreOpCallback(
 
     KeAcquireGuardedMutex(&PidWatchListMutex);
     
+    if (IsListEmpty(&PidWatchList))
+        goto ReleaseMutex;
+
     // If a process/thread operation originates from the original process/thread
     // exit the function. Otherwise, iterate over the list of Process Ids to protect.
-    PLIST_ENTRY CurrEntry = ProcessWatchList.Flink;
+    PLIST_ENTRY CurrEntry = PidWatchList.Flink;
     HANDLE BlockedPid = NULL;
-    while (CurrEntry != NULL)
+    BOOLEAN Found = FALSE;
+
+    while (CurrEntry != &PidWatchList)
     {
         HANDLE CurrPid = CONTAINING_RECORD(CurrEntry, WATCH_PID_ENTRY, List)->ProcessId;
+        DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_TRACE_LEVEL, 
+            "Current pid: %p\n", CurrPid);
 
         if (PreOpInfo->ObjectType == *PsProcessType)
         {
             if (PreOpInfo->Object == PsGetCurrentProcess())
                 goto ReleaseMutex;
-            if (PreOpInfo->Object != CurrPid)
-                continue;
 
-            BlockedPid = CurrPid;
-            PermissionsToRemove |= PROCESS_CREATE_PROCESS;
+            DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_TRACE_LEVEL, 
+                "Pid of handle obtained: %p\n", 
+                PsGetProcessId(PreOpInfo->Object));
+
+            if (PsGetProcessId((PEPROCESS)PreOpInfo->Object) == CurrPid)
+            {
+                BlockedPid = CurrPid;
+                PermissionsToRemove |= PROCESS_CREATE_PROCESS;
+                Found = TRUE;
+                break;
+            }
         }
         else if (PreOpInfo->ObjectType == *PsThreadType)
         {
             HANDLE ThreadProcId = PsGetThreadProcessId((PETHREAD)PreOpInfo->Object);
+            
+            DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_TRACE_LEVEL, 
+                "Pid of handle obtained: %p\n", ThreadProcId);
+
             if (ThreadProcId == PsGetCurrentProcessId())
                 goto ReleaseMutex;
-            if (PreOpInfo->Object != CurrPid)
-                continue;
 
-            BlockedPid = CurrPid;
-            PermissionsToRemove |= PROCESS_CREATE_THREAD;
+            if (ThreadProcId == CurrPid)
+            {
+                BlockedPid = CurrPid;
+                PermissionsToRemove |= PROCESS_CREATE_THREAD;
+                Found = TRUE;
+                break;
+            }
         }
         else
         {
+            DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL,
+                "Somehow managed to get here :feelsdankman:\n");
             goto ReleaseMutex;
         }
 
         CurrEntry = CurrEntry->Flink;
     }
  
+    if (!Found)
+        goto ReleaseMutex;
+
     DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_TRACE_LEVEL, 
-        "PreOpCallback: Attempt to access 0x%p from PID: 0x%p", 
+        "PreOpCallback: Attempt to access 0x%p from PID: 0x%p\n", 
         BlockedPid, 
         PsGetCurrentProcessId());
 
