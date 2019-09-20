@@ -30,3 +30,33 @@ ClearWatchList(
     KeReleaseGuardedMutex(&PidWatchListMutex);
     KeReleaseGuardedMutex(&ProcessWatchListMutex);
 }
+
+VOID
+RemovePidFromWatchList(
+    _In_ HANDLE ProcessId
+)
+{
+    PAGED_CODE();
+
+    KeAcquireGuardedMutex(&PidWatchListMutex);
+    if (IsListEmpty(&PidWatchList))
+        goto ReleaseMutex;
+
+    PLIST_ENTRY CurrEntry = PidWatchList.Flink;
+
+    while (CurrEntry != &PidWatchList)
+    {
+        HANDLE CurrProcId = CONTAINING_RECORD(CurrEntry, WATCH_PID_ENTRY, List)->ProcessId;
+        if (CurrProcId == ProcessId)
+        {
+            DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_TRACE_LEVEL, 
+                "Removing PID: %p from watch list\n", ProcessId);
+            RemoveEntryList(CurrEntry);
+            break;
+        }
+        CurrEntry = CurrEntry->Flink;
+    }
+
+ReleaseMutex:
+    KeReleaseGuardedMutex(&PidWatchListMutex);
+}

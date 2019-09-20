@@ -1,4 +1,5 @@
 #include "Protect.h"
+#include "Misc.h"
 
 VOID
 CreateProcessNotifyRoutine(
@@ -7,10 +8,15 @@ CreateProcessNotifyRoutine(
     _In_opt_ PPS_CREATE_NOTIFY_INFO CreateInfo
 )
 {
+    PAGED_CODE();
+
     UNREFERENCED_PARAMETER(Process);
  
     if (CreateInfo == NULL)
+    {
+        RemovePidFromWatchList(ProcessId);
         return;
+    }
 
     DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_TRACE_LEVEL, "CreateProcessNotifyRoutine: Entering with %wZ\n", CreateInfo->ImageFileName);
 
