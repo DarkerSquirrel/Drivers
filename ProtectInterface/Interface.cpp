@@ -68,9 +68,13 @@ noexcept
             NULL);
 
         if (!Status)
+        {
             cout << "Operation failed" << endl;
+            return;
+        }
 
         cout << "Operation completed successfully" << endl;
+        cout << "Output contains: " << bytes << " bytes" << endl;
     }
     catch (runtime_error& e)
     {
@@ -99,12 +103,13 @@ ProtectEnum(
 )
 {
     ENUMERATE_PROCESS_INFO EnumerationInfo;
+    memset(&EnumerationInfo, 0, sizeof(ENUMERATE_PROCESS_INFO));
 
     SendIOCTL(IOCTL_PROTECT_ENUM, nullptr, reinterpret_cast<LPVOID>(&EnumerationInfo));
 
-    cout << "Watching: " << EnumerationInfo.WatchCount << " processes\n";
+    cout << "Watching: " << hex << EnumerationInfo.WatchCount << " processes\n";
     
-    for (auto i = 0; i < EnumerationInfo.WatchCount; i++)
+    for (ULONG i = 0; i < EnumerationInfo.WatchCount; i++)
     {
         cout << EnumerationInfo.Names[i] << endl;
     }

@@ -21,7 +21,7 @@ UNICODE_STRING Altitude;
 BOOLEAN CallbackInstalled = FALSE;
 PVOID RegistrationHandle = NULL;
 
-UINT32 CurrentWatchCount = 0;
+ULONG CurrentWatchCount = 0;
 
 VOID
 RegisterCallbacks(

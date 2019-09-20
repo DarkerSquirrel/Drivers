@@ -15,8 +15,11 @@ CreateProcessNotifyRoutine(
     UNREFERENCED_PARAMETER(Process);
 
     KeAcquireGuardedMutex(&ProcessWatchListMutex);
-    PLIST_ENTRY CurrEntry = ProcessWatchList.Flink;
 
+    if (IsListEmpty(&ProcessWatchList))
+        goto ReleaseMutex;
+
+    PLIST_ENTRY CurrEntry = ProcessWatchList.Flink;
     while (CurrEntry != NULL)
     {
         PWCHAR CurrName = CONTAINING_RECORD(CurrEntry, WATCH_PROCESS_ENTRY, List)->Name;
@@ -37,4 +40,5 @@ CreateProcessNotifyRoutine(
 
 ReleaseMutex:
     KeReleaseGuardedMutex(&ProcessWatchListMutex);
+    return;
 }

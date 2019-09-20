@@ -54,6 +54,7 @@ Exit:
             ExFreePoolWithTag(CurrentEntry, LIST_POOL_TAG);
     }
 
+    pIRP->IoStatus.Information = 0;
     return Status;
 }
 
@@ -74,6 +75,7 @@ IOCTLEnumerateWatchList(
     ASSERT(IrpStackLocation != NULL);
 
     ULONG OutputLen = IrpStackLocation->Parameters.DeviceIoControl.OutputBufferLength;
+    ULONG CurrCount = 0;
     
     if (OutputLen < sizeof(ENUMERATE_PROCESS_INFO))
     {
@@ -86,8 +88,11 @@ IOCTLEnumerateWatchList(
     KeAcquireGuardedMutex(&ProcessWatchListMutex);
 
     pOutput->WatchCount = CurrentWatchCount;
+
+    if (IsListEmpty(&ProcessWatchList))
+        goto ReleaseMutex;
+
     PLIST_ENTRY CurrEntry = ProcessWatchList.Flink;
-    int CurrCount = 0;
 
     while (CurrEntry != NULL)
     {
@@ -98,9 +103,11 @@ IOCTLEnumerateWatchList(
         CurrCount++;
     }
 
+ReleaseMutex:
     KeReleaseGuardedMutex(&ProcessWatchListMutex);
 
 Exit:
+    pIRP->IoStatus.Information = CurrCount * (MAX_PATH + 1);
     return Status;
 }
 
@@ -121,14 +128,14 @@ IOCTLClearWatchList(
 
     CurrentWatchCount = 0;
     
-    if (!IsListEmpty(&ProcessWatchList))
+    while (!IsListEmpty(&ProcessWatchList))
     {
         PLIST_ENTRY Removed = RemoveHeadList(&ProcessWatchList);
         PWATCH_PROCESS_ENTRY WatchProcess = CONTAINING_RECORD(Removed, WATCH_PROCESS_ENTRY, List);
         ExFreePoolWithTag(WatchProcess, LIST_POOL_TAG);
     }
 
-    if (!IsListEmpty(&PidWatchList))
+    while (!IsListEmpty(&PidWatchList))
     {
         PLIST_ENTRY Removed = RemoveHeadList(&PidWatchList);
         PWATCH_PID_ENTRY WatchPid = CONTAINING_RECORD(Removed, WATCH_PID_ENTRY, List);
@@ -138,5 +145,6 @@ IOCTLClearWatchList(
     KeReleaseGuardedMutex(&PidWatchListMutex);
     KeReleaseGuardedMutex(&ProcessWatchListMutex);
 
+    pIRP->IoStatus.Information = 0;
     return Status;
 }

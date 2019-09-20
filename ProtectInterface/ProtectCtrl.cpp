@@ -11,7 +11,7 @@ const string help =
 "-clear: Clears the currently protected names and pids";
 
 int 
-main(
+wmain(
     _In_ int argc, 
     _In_ LPWSTR *argv
 )
@@ -19,30 +19,52 @@ main(
     if (argc <= 1)
         goto ErrorExit;
 
-    if (wcscmp(argv[1], L"-install"))
+    if (wcscmp(argv[1], L"-install") == 0)
     {
-        InstallDriver(DEFAULT_INSTALL_PATH);
+        try
+        {
+            InstallDriver(DEFAULT_INSTALL_PATH);
+            cout << "Installed successfully" << endl;
+        }
+        catch (runtime_error& err)
+        {
+            cout << err.what() << "\n"
+                "Last Error: 0x" << hex << GetLastError() << endl;
+        }
     }
-    else if (wcscmp(argv[1], L"-uninstall"))
+    else if (wcscmp(argv[1], L"-uninstall") == 0)
     {
-        UninstallDriver();
+        try
+        {
+            UninstallDriver();
+            cout << "Uninstalled successfully" << endl;
+        }
+        catch (runtime_error& err)
+        {
+            cout << err.what() << "\n"
+                "Last Error: 0x"  << hex << GetLastError() << endl;
+        }
     }
-    else if (wcscmp(argv[1], L"-protect"))
+    else if (wcscmp(argv[1], L"-protect") == 0)
     {
         if (argc <= 2)
             goto ErrorExit;
 
         ProtectAdd(argv[2]);
     }
-    else if (wcscmp(argv[1], L"-clear"))
+    else if (wcscmp(argv[1], L"-clear") == 0)
     {
         ProtectClear();
     }
-    else if (wcscmp(argv[1], L"-enum"))
+    else if (wcscmp(argv[1], L"-enum") == 0)
     {
         ProtectEnum();
     }
-    else if (wcscmp(argv[1], L"-h") || wcscmp(argv[1], L"-help"))
+    else if (wcscmp(argv[1], L"-h") == 0 || wcscmp(argv[1], L"-help") == 0)
+    {
+        cout << help << endl;
+    }
+    else
     {
         cout << help << endl;
     }

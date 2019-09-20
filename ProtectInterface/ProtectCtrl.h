@@ -21,12 +21,12 @@ public:
             return *this;
 
         Handle_ = Other.Handle_;
-        Other.Handle_ = nullptr;
+        Other.Handle_ = NULL;
         return *this;
     };
     ~SCHandle() noexcept
     {
-        if (Handle_ != nullptr)
+        if (Handle_ != NULL)
             CloseServiceHandle(Handle_);
     }
 };

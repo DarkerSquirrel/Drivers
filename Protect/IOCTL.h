@@ -14,6 +14,6 @@ IOCTLEnumerateWatchList(
 
 NTSTATUS
 IOCTLClearWatchList(
-    _In_ PDEVICE_OBJECT pDeviceObject, 
+    _In_ PDEVICE_OBJECT pDeviceObject,
     _In_ PIRP pIRP
 );

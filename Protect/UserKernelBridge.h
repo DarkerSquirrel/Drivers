@@ -23,6 +23,6 @@ typedef struct _PROTECT_INPUT
 
 typedef struct _ENUMERATE_PROCESS_INFO
 {
-    INT WatchCount;
+    ULONG WatchCount;
     WCHAR Names[MAX_WATCH_COUNT][MAX_PATH + 1];
 } ENUMERATE_PROCESS_INFO, *PENUMERATE_PROCESS_INFO;

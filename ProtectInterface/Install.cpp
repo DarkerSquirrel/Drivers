@@ -7,23 +7,15 @@ InstallDriver(
     _In_ LPCWSTR DriverInstallPath
 )
 {
-    try
-    {
-        // Ensure driver is uninstalled
-        UninstallDriver();
-    }
-    catch (runtime_error& err)
-    {
-        cout << err.what() << "\n" <<
-            hex << GetLastError() << endl;
-    }
+    // Ensure driver is uninstalled
+    UninstallDriver();
 
     // Driver is assumed to be in the same directory
     // Copy the driver into the system driver directory
     auto Status = CopyFileW(
         DRIVER_NAME_AND_EXT, 
         DriverInstallPath, 
-        TRUE
+        FALSE
     );
 
     if (!Status)
@@ -40,7 +32,7 @@ InstallDriver(
     if (SCMHandle == NULL)
         throw runtime_error("InstallDriver: OpenSCManagerW failed");
 
-    SCHandle SCMHandleWrapper(SCMHandle);
+    //SCHandle SCMHandleWrapper(SCMHandle);
 
     // Create the service
     auto ServiceHandle = CreateServiceW(
@@ -62,12 +54,12 @@ InstallDriver(
     if (ServiceHandle == NULL)
         throw runtime_error("InstallDriver: CreateServiceW failed");
 
-    SCHandle ServiceHandleWrapper(ServiceHandle);
+    //SCHandle ServiceHandleWrapper(ServiceHandle);
 
     // Start the service
     Status = StartServiceW(
         ServiceHandle,
-        0, 
+        0,
         NULL
     );
 
@@ -92,7 +84,7 @@ UninstallDriver(
     SCHandle SCMHandleWrapper(SCMHandle);
 
     // Open a handle to the service
-    auto ServiceHandle = OpenService(
+    auto ServiceHandle = OpenServiceW(
         SCMHandle,
         DRIVER_NAME,
         SERVICE_ALL_ACCESS
@@ -115,7 +107,15 @@ UninstallDriver(
         &ServiceStatus);
 
     if (!Status)
+    {
+        if (GetLastError() == ERROR_SERVICE_NOT_ACTIVE)
+        {
+            if (!DeleteService(ServiceHandle))
+                throw runtime_error("UninstallDriver: DeleteService failed\n");
+            return;
+        }
         throw runtime_error("UninstallDriver: ControlService failed");
+    }
     
     SERVICE_STATUS_PROCESS ServiceStatusProcess;
     DWORD Bytes;
@@ -125,7 +125,7 @@ UninstallDriver(
         auto QueryStatus = QueryServiceStatusEx(
             ServiceHandle,
             SC_STATUS_PROCESS_INFO,
-            (BYTE *)&ServiceStatusProcess,
+            reinterpret_cast<PBYTE>(&ServiceStatusProcess),
             sizeof(ServiceStatusProcess),
             &Bytes
         );

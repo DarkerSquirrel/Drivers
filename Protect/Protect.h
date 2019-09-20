@@ -12,7 +12,7 @@ extern KGUARDED_MUTEX PidWatchListMutex;
 extern LIST_ENTRY ProcessWatchList;
 extern LIST_ENTRY PidWatchList;
 
-extern UINT32 CurrentWatchCount;
+extern ULONG CurrentWatchCount;
 
 typedef struct _CALLBACK_PARAMS
 {

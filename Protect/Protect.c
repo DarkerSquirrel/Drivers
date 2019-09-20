@@ -1,5 +1,6 @@
 #include "Protect.h"
 #include "UserKernelBridge.h"
+#include "IOCTL.h"
 
 DRIVER_INITIALIZE DriverEntry;
 
@@ -18,6 +19,7 @@ DriverEntry(
     _In_ PUNICODE_STRING RegistryPath
 )
 {
+
     NTSTATUS Status;
     
     UNREFERENCED_PARAMETER(RegistryPath);
@@ -27,12 +29,12 @@ DriverEntry(
     RtlInitUnicodeString(&DeviceName, DEVICE_NAME);
     RtlInitUnicodeString(&DosDevicesName, DOS_DEVICES_NAME);
     
-    PDEVICE_OBJECT pDeviceObject;
+    PDEVICE_OBJECT pDeviceObject = NULL;
     BOOLEAN SymLinkCreated = FALSE;
 
     Status = IoCreateDevice(
         DriverObject,
-       0,
+        0,
         &DeviceName,
         FILE_DEVICE_UNKNOWN,
         0,
@@ -139,28 +141,6 @@ DeviceCleanup(
 }
 
 NTSTATUS
-ControlProtect(
-    _In_ PDEVICE_OBJECT pDeviceObject,
-    _In_ PPROTECT_INPUT pInput
-)
-{
-    UNREFERENCED_PARAMETER(pDeviceObject);
-    UNREFERENCED_PARAMETER(pInput);
-    return STATUS_SUCCESS;
-}
-
-NTSTATUS
-ControlRemoveProtect(
-    _In_ PDEVICE_OBJECT pDeviceObject,
-    _In_ PPROTECT_INPUT pIRP
-)
-{
-    UNREFERENCED_PARAMETER(pDeviceObject);
-    UNREFERENCED_PARAMETER(pIRP);
-    return STATUS_SUCCESS;
-}
-
-NTSTATUS
 DeviceControl(
     IN PDEVICE_OBJECT pDeviceObject,
     IN PIRP pIRP
@@ -172,34 +152,25 @@ DeviceControl(
 
     PIO_STACK_LOCATION pIRPStack;
     pIRPStack = IoGetCurrentIrpStackLocation(pIRP);
-   
-    ULONG InputBufferLength = pIRPStack->Parameters.DeviceIoControl.InputBufferLength;
-    
-    if (InputBufferLength == 0)
-    {
-        Status = STATUS_INVALID_BUFFER_SIZE;
-        return Status;
-    }
-
-    if (InputBufferLength < sizeof(PROTECT_INPUT))
-    {
-        Status = STATUS_BUFFER_OVERFLOW;
-        return Status;
-    }
-
-    PPROTECT_INPUT pInput = (PPROTECT_INPUT)pIRP->AssociatedIrp.SystemBuffer;
 
     switch (pIRPStack->Parameters.DeviceIoControl.IoControlCode)
     {
     case IOCTL_PROTECT_ADD:
-        Status = ControlProtect(pDeviceObject, pInput);
+        Status = IOCTLAddProcessToWatchList(pDeviceObject, pIRP);
         break;
     case IOCTL_PROTECT_CLEAR:
-        Status = ControlRemoveProtect(pDeviceObject, pInput);
+        Status = IOCTLClearWatchList(pDeviceObject, pIRP);
         break;
     case IOCTL_PROTECT_ENUM:
-        Status = 1;
+        Status = IOCTLEnumerateWatchList(pDeviceObject, pIRP);
+        break;
+    default:
+        Status = STATUS_NOT_IMPLEMENTED;
+        break;
     }
+
+    pIRP->IoStatus.Status = Status;
+    IoCompleteRequest(pIRP, IO_NO_INCREMENT);
 
     return Status;
 }
