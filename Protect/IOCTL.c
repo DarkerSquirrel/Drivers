@@ -78,6 +78,7 @@ IOCTLEnumerateWatchList(
 
     ULONG OutputLen = IrpStackLocation->Parameters.DeviceIoControl.OutputBufferLength;
     ULONG CurrCount = 0;
+    ULONG CurrPidIndex = 0;
     
     if (OutputLen < sizeof(ENUMERATE_PROCESS_INFO))
     {
@@ -88,8 +89,10 @@ IOCTLEnumerateWatchList(
     memset(pOutput, 0, sizeof(ENUMERATE_PROCESS_INFO));
 
     KeAcquireGuardedMutex(&ProcessWatchListMutex);
+    KeAcquireGuardedMutex(&PidWatchListMutex);
 
     pOutput->WatchCount = CurrentWatchCount;
+    pOutput->PidWatchCount = CurrentPidWatchCount;
 
     if (IsListEmpty(&ProcessWatchList))
         goto ReleaseMutex;
@@ -105,11 +108,29 @@ IOCTLEnumerateWatchList(
         CurrCount++;
     }
 
+    memset(pOutput->Pids, -1, sizeof(pOutput->Pids));
+
+    if (IsListEmpty(&PidWatchList))
+        goto ReleaseMutex;
+
+    PLIST_ENTRY CurrPidEntry = PidWatchList.Flink;
+
+    while (CurrPidEntry != &PidWatchList)
+    {
+        pOutput->Pids[CurrPidIndex] = (INT64)CONTAINING_RECORD(CurrPidEntry, WATCH_PID_ENTRY, List)->ProcessId;
+        CurrPidEntry = CurrPidEntry->Flink;
+        CurrPidIndex++;
+    }
+
 ReleaseMutex:
+    KeReleaseGuardedMutex(&PidWatchListMutex);
     KeReleaseGuardedMutex(&ProcessWatchListMutex);
 
 Exit:
-    pIRP->IoStatus.Information = CurrCount * (MAX_PATH + 1) + sizeof(CurrentWatchCount);
+    pIRP->IoStatus.Information = CurrCount * (MAX_PATH + 1) +
+        sizeof(CurrentWatchCount) +
+        CurrPidIndex * sizeof(pOutput->Pids[0]);
+
     return Status;
 }
 

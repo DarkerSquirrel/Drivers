@@ -13,6 +13,7 @@ extern LIST_ENTRY ProcessWatchList;
 extern LIST_ENTRY PidWatchList;
 
 extern ULONG CurrentWatchCount;
+extern ULONG CurrentPidWatchCount;
 
 extern BOOLEAN CallbackInstalled;
 

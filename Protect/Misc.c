@@ -39,6 +39,9 @@ RemovePidFromWatchList(
     PAGED_CODE();
 
     KeAcquireGuardedMutex(&PidWatchListMutex);
+    
+    DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_TRACE_LEVEL, "Acquired Pid Mutex\n");
+
     if (IsListEmpty(&PidWatchList))
         goto ReleaseMutex;
 
@@ -52,11 +55,12 @@ RemovePidFromWatchList(
             DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_TRACE_LEVEL, 
                 "Removing PID: %p from watch list\n", ProcessId);
             RemoveEntryList(CurrEntry);
-            break;
+            goto ReleaseMutex;
         }
         CurrEntry = CurrEntry->Flink;
     }
 
 ReleaseMutex:
+    DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_TRACE_LEVEL, "Released Pid Mutex\n");
     KeReleaseGuardedMutex(&PidWatchListMutex);
 }

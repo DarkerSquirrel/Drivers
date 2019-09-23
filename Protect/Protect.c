@@ -190,6 +190,9 @@ DriverUnload(
 )
 {
     NTSTATUS Status = STATUS_SUCCESS;
+
+    DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_TRACE_LEVEL, "Entering unload\n");
+
     UNICODE_STRING DosDevicesName;
     RtlInitUnicodeString(&DosDevicesName, DOS_DEVICES_NAME);
 
@@ -209,4 +212,6 @@ DriverUnload(
         PsSetCreateProcessNotifyRoutineEx(CreateProcessNotifyRoutine, TRUE);
         CreateRoutineEnabled = FALSE;
     }
+
+    DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_TRACE_LEVEL, "Exiting unload\n");
 }

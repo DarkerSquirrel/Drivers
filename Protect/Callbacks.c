@@ -23,6 +23,7 @@ BOOLEAN CallbackInstalled = FALSE;
 PVOID RegistrationHandle = NULL;
 
 ULONG CurrentWatchCount = 0;
+ULONG CurrentPidWatchCount = 0;
 
 NTSTATUS
 RegisterCallbacks(
@@ -125,10 +126,6 @@ PreOpCallback(
             if (PreOpInfo->Object == PsGetCurrentProcess())
                 goto ReleaseMutex;
 
-            DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_TRACE_LEVEL, 
-                "Pid of handle obtained: %p\n", 
-                PsGetProcessId(PreOpInfo->Object));
-
             if (PsGetProcessId((PEPROCESS)PreOpInfo->Object) == CurrPid)
             {
                 BlockedPid = CurrPid;
@@ -140,9 +137,6 @@ PreOpCallback(
         else if (PreOpInfo->ObjectType == *PsThreadType)
         {
             HANDLE ThreadProcId = PsGetThreadProcessId((PETHREAD)PreOpInfo->Object);
-            
-            DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_TRACE_LEVEL, 
-                "Pid of handle obtained: %p\n", ThreadProcId);
 
             if (ThreadProcId == PsGetCurrentProcessId())
                 goto ReleaseMutex;

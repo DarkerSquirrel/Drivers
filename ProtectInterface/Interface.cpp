@@ -109,10 +109,17 @@ ProtectEnum(
 
     SendIOCTL(IOCTL_PROTECT_ENUM, nullptr, reinterpret_cast<LPVOID>(&EnumerationInfo));
 
-    cout << "Watching: " << hex << EnumerationInfo.WatchCount << " processes\n";
+    cout << "Watching for: " << EnumerationInfo.WatchCount << " processes\n";
     
     for (ULONG i = 0; i < EnumerationInfo.WatchCount; i++)
     {
         wcout << EnumerationInfo.Names[i] << endl;
+    }
+
+    cout << "Protecting: " << EnumerationInfo.PidWatchCount << "processes\n";
+
+    for (ULONG i = 0; i < EnumerationInfo.PidWatchCount; i++)
+    {
+        cout << EnumerationInfo.Pids[i] << endl;
     }
 }

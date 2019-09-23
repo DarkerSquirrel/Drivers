@@ -15,6 +15,7 @@
 #define DEFAULT_INSTALL_PATH    L"C:\\Windows\\System32\\Drivers\\Protect.sys"
 
 #define MAX_WATCH_COUNT 10
+#define MAX_PID_COUNT 50
 
 typedef struct _PROTECT_INPUT
 {
@@ -25,4 +26,6 @@ typedef struct _ENUMERATE_PROCESS_INFO
 {
     ULONG WatchCount;
     WCHAR Names[MAX_WATCH_COUNT][MAX_PATH + 1];
+    ULONG PidWatchCount;
+    INT64 Pids[MAX_PID_COUNT];
 } ENUMERATE_PROCESS_INFO, *PENUMERATE_PROCESS_INFO;

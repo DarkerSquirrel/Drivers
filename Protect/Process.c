@@ -1,5 +1,6 @@
 #include "Protect.h"
 #include "Misc.h"
+#include "UserKernelBridge.h"
 
 VOID
 CreateProcessNotifyRoutine(
@@ -56,9 +57,22 @@ CreateProcessNotifyRoutine(
                 goto ReleaseMutex;
 
             CurrPidEntry->ProcessId = ProcessId;
-            DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "Match found, adding PID %p to protected list\n", ProcessId);
+            DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_TRACE_LEVEL, "Match found, adding PID %p to protected list\n", ProcessId);
+
             KeAcquireGuardedMutex(&PidWatchListMutex);
+
+            if (CurrentPidWatchCount >= MAX_PID_COUNT)
+            {
+                DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_TRACE_LEVEL,
+                    "CreateProcessNotifyRoutine: Can only support watching %u pids\n",
+                    MAX_PID_COUNT);
+                KeReleaseGuardedMutex(&PidWatchListMutex);
+                goto ReleaseMutex;
+            }
+
+            CurrentPidWatchCount++;
             InsertHeadList(&PidWatchList, &CurrPidEntry->List);
+
             KeReleaseGuardedMutex(&PidWatchListMutex);
         }
         CurrEntry = CurrEntry->Flink;
