@@ -74,7 +74,7 @@ UnRegisterCallbacks(
         return;
 
     KeAcquireGuardedMutex(&CallbackMutex);
-    ObUnRegisterCallbacks(&RegistrationHandle);
+    ObUnRegisterCallbacks(RegistrationHandle);
     KeReleaseGuardedMutex(&CallbackMutex);
 }
 
