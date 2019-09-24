@@ -55,6 +55,7 @@ RemovePidFromWatchList(
             DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_TRACE_LEVEL, 
                 "Removing PID: %p from watch list\n", ProcessId);
             RemoveEntryList(CurrEntry);
+            ExFreePoolWithTag(CurrEntry, PID_POOL_TAG);
             goto ReleaseMutex;
         }
         CurrEntry = CurrEntry->Flink;

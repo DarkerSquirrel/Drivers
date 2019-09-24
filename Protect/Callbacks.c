@@ -129,7 +129,7 @@ PreOpCallback(
             if (PsGetProcessId((PEPROCESS)PreOpInfo->Object) == CurrPid)
             {
                 BlockedPid = CurrPid;
-                PermissionsToRemove |= PROCESS_CREATE_PROCESS;
+                //PermissionsToRemove |= PROCESS_CREATE_PROCESS;
                 Found = TRUE;
                 break;
             }
@@ -144,7 +144,7 @@ PreOpCallback(
             if (ThreadProcId == CurrPid)
             {
                 BlockedPid = CurrPid;
-                PermissionsToRemove |= PROCESS_CREATE_THREAD;
+                //PermissionsToRemove |= PROCESS_CREATE_THREAD;
                 Found = TRUE;
                 break;
             }
